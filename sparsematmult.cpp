@@ -82,37 +82,18 @@ typedef struct csr_t {
     mat->reserve(this->ncols, this->ptr[this->nrows]);
     mat->ncols = this->nrows;
 
-    // printf("%d\n", mat->nrows);
     #pragma omp parallel
     {
-      //#pragma omp single
       {
         #pragma omp for
         for(idx_t k = 0; k < mat->nrows + 1; ++k) mat->ptr[k] = 0;
-
-        // #pragma omp single
-        // {
-        //   for(idx_t k = 0; k < mat->nrows + 1; ++k){
-        //     printf("%lu\n", mat->ptr[k]);
-        //     printf("%d\n", k);
-        //   } 
-        // }
 
         #pragma omp single
         {
           for(idx_t j = 0; j < this->ptr[this->nrows]; ++j){
             mat->ptr[this->ind[j] + 1]++;
-            // printf("%d\n", this->ind[j] + 1);
           }
         }
-
-        // #pragma omp single
-        // {
-        //   for(idx_t k = 0; k < mat->nrows + 1; ++k){
-        //     printf("%lu\n", mat->ptr[k]);
-        //     printf("%d\n", k);
-        //   } 
-        // }
 
         #pragma omp single
         {
@@ -120,13 +101,6 @@ typedef struct csr_t {
             mat->ptr[j] += mat->ptr[j - 1];
           }
         }
-        // #pragma omp single
-        // {
-        //   for(idx_t k = 0; k < mat->nrows + 1; ++k){
-        //     printf("%lu\n", this->ptr[k]);
-        //     printf("%d\n", k);
-        //   } 
-        // }
       }
     }
     ptr_t * temp_ptr = (ptr_t*) malloc(sizeof(ptr_t) * (mat->nrows+1));
@@ -139,13 +113,6 @@ typedef struct csr_t {
         #pragma omp for
         for(idx_t k = 0; k < mat->nrows + 1; ++k) temp_ptr[k] = mat->ptr[k];
 
-        // #pragma omp single
-        // {
-        //   for(idx_t k = 0; k < mat->nrows + 1; ++k){
-        //     printf("%lu\n", temp_ptr[k]);
-        //     printf("%d\n", k);
-        //   } 
-        // }
         #pragma omp single
         {
           idx_t v,c = 0;
@@ -153,8 +120,6 @@ typedef struct csr_t {
             for(idx_t j = this->ptr[i]; j < this->ptr[i + 1]; ++j){
               v = this->val[j];
               c = this->ind[j];
-              // printf("%d\n", c);
-              // printf("%lu\n", temp_ptr[c]);
               mat->ind[temp_ptr[c]] = i;
               mat->val[temp_ptr[c]] = v;
               temp_ptr[c]++;
