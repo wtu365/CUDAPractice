@@ -92,7 +92,7 @@ typedef struct csr_t {
         {
           for(idx_t j = 0; j < this->ptr[this->nrows]; ++j){ //For each nonzero...
             mat->ptr[this->ind[j] + 1]++; // ...check which column that nonzero is in. The corresponding column in the CSC should be incremented by 1 for # of nonzeros in that column
-          }
+          } // Maybe possible race condition?
         }
 
         #pragma omp single
@@ -103,12 +103,12 @@ typedef struct csr_t {
         }
       }
     }
-    ptr_t * temp_ptr = (ptr_t*) malloc(sizeof(ptr_t) * (mat->nrows+1));
+    ptr_t * temp_ptr = (ptr_t*) malloc(sizeof(ptr_t) * (mat->nrows+1)); //Set up temporary colptr
     #pragma omp parallel
     {
       {
         #pragma omp for
-        for(idx_t k = 0; k < mat->nrows + 1; ++k) temp_ptr[k] = 0;
+        for(idx_t k = 0; k < mat->nrows + 1; ++k) temp_ptr[k] = 0; // Copying over colptr to temporary colptr
 
         #pragma omp for
         for(idx_t k = 0; k < mat->nrows + 1; ++k) temp_ptr[k] = mat->ptr[k];
@@ -116,13 +116,13 @@ typedef struct csr_t {
         #pragma omp single
         {
           idx_t v,c = 0;
-          for(idx_t i = 0; i < this->nrows; ++i){
-            for(idx_t j = this->ptr[i]; j < this->ptr[i + 1]; ++j){
-              v = this->val[j];
-              c = this->ind[j];
-              mat->ind[temp_ptr[c]] = i;
-              mat->val[temp_ptr[c]] = v;
-              temp_ptr[c]++;
+          for(idx_t i = 0; i < this->nrows; ++i){ // For each row in the CSR...
+            for(idx_t j = this->ptr[i]; j < this->ptr[i + 1]; ++j){ // ...and for each nonzero in each row
+              v = this->val[j]; // Get the value of the nonzero
+              c = this->ind[j]; // Get the column index of that nonzero
+              mat->ind[temp_ptr[c]] = i; // Set the index in colind to be the row number
+              mat->val[temp_ptr[c]] = v; // Set the value in colval to be the value of the nonzero
+              temp_ptr[c]++; // Increment the temporary colptr's column index by 1 to put the next nonzero in that column after the previously placed nonzero
             }
           }
         }
