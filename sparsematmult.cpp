@@ -78,27 +78,27 @@ typedef struct csr_t {
    */
   csr_t* transpose()
   {
-    auto mat = new csr_t();
-    mat->reserve(this->ncols, this->ptr[this->nrows]);
+    auto mat = new csr_t(); // The CSC that the CSR will be transposed into
+    mat->reserve(this->ncols, this->ptr[this->nrows]); // Reserve space for the CSC
     mat->ncols = this->nrows;
 
     #pragma omp parallel
     {
       {
         #pragma omp for
-        for(idx_t k = 0; k < mat->nrows + 1; ++k) mat->ptr[k] = 0;
+        for(idx_t k = 0; k < mat->nrows + 1; ++k) mat->ptr[k] = 0; // Set each value in colptr to 0
 
         #pragma omp single
         {
-          for(idx_t j = 0; j < this->ptr[this->nrows]; ++j){
-            mat->ptr[this->ind[j] + 1]++;
+          for(idx_t j = 0; j < this->ptr[this->nrows]; ++j){ //For each nonzero...
+            mat->ptr[this->ind[j] + 1]++; // ...check which column that nonzero is in. The corresponding column in the CSC should be incremented by 1 for # of nonzeros in that column
           }
         }
 
         #pragma omp single
         {
           for(idx_t j = 1; j < mat->nrows + 1; ++j){
-            mat->ptr[j] += mat->ptr[j - 1];
+            mat->ptr[j] += mat->ptr[j - 1]; // Each value in the colptr array should be added up to show the number of nonzeros accounted for reading column by column
           }
         }
       }
