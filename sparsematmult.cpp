@@ -211,133 +211,6 @@ typedef struct csr_t {
   }
 } csr_t;
 
-/**
- * Ensure the matrix is valid
- * @param mat Matrix to test
- */
-// void test_matrix(csr_t * mat){
-//   auto nrows = mat->nrows;
-//   auto ncols = mat->ncols;
-//   assert(mat->ptr);
-//   auto nnz = mat->ptr[nrows];
-//   for(idx_t i=0; i < nrows; ++i){
-//     // printf("%lu\n", mat->ptr[i]);
-//     // printf("%lu\n", nnz);
-//     assert(mat->ptr[i] <= nnz);
-//   }
-//   for(ptr_t j=0; j < nnz; ++j){
-//     assert(mat->ind[j] < ncols);
-//   }
-// }
-
-val_t sparsevectorvector(csr_t * A, csr_t * B, ptr_t arow, ptr_t brow){
-  val_t sum = 0;
-  // printf("Entered function\n");
-  // #pragma omp parallel
-  // {
-    idx_t i = 0;
-    idx_t j = 0;
-    // #pragma omp for
-    for(i = A->ptr[arow], j = B->ptr[brow]; i < A->ptr[arow + 1] && j < B->ptr[brow + 1];){
-      // printf("index i is: %d and index j is: %d\n", i, j);
-      if (A->ind[i] == B->ind[j]){
-        sum += A->val[i] * B->val[j];
-        ++i; ++j;
-      } else if (A->ind[i] < B->ind[j]){
-        ++i;
-      } else ++j;
-    }
-  // }
-
-  // for(idx_t i = A->ptr[arow]; i < A->ptr[arow + 1];){
-  //   for(idx_t j = B->ptr[brow]; j < B->ptr[brow + 1];){
-  //     printf("index i is: %d and index j is: %d\n", i, j);
-  //     if (A->ind[i] == B->ind[j]){
-  //       sum += A->val[i] * B->val[j];
-  //       ++i; ++j;
-  //     } else if (A->ind[i] < B->ind[j]){
-  //       ++i;
-  //     } else ++j;
-  //   }
-  // }
-  // printf("Exiting\n");
-  return sum;
-}
-
-/**
- * Multiply A and B and write output in C.
- * Note that C has no data allocations (i.e., ptr, ind, and val pointers are null).
- * Use `csr_t::reserve` to increase C's allocations as necessary.
- * @param A  Matrix A.
- * @param B The transpose of matrix B.
- * @param C  Output matrix
- */
-void sparsematmult(csr_t * A, csr_t * B, csr_t *C)
-{
-  // C->reserve(A->nrows, A->nrows * B->nrows);
-  // C->ncols = B->nrows;
-
-  // C->ptr[0] = 0;                                                        //init ptr[0] = 0
-  // C->ptr[1] = 0;
-
-  // idx_t countCval = 0;                                                            //counting current cvalues
-
-  // for(idx_t rowA = 0; rowA < A->nrows; ++rowA){                                   //iterate through rows of A
-  //   for(idx_t rowB = 0; rowB < B->nrows; ++rowB){                                 //iterating through rows of B
-  //     bool addToPTR = false;                                                      //whether or not there is a new value
-  //     for(idx_t Bindex = B->ptr[rowB]; Bindex < B->ptr[rowB + 1]; ++Bindex){      //iterating through every value in row B
-  //       for(idx_t Aindex = A->ptr[rowA]; Aindex < A->ptr[rowA + 1]; ++Aindex){    //iterating through every value in row A
-  //         if(A->ind[Aindex] == B->ind[Bindex]){                                   //if the column ids match up, multiply them
-  //           C->val[countCval] += A->val[Aindex] * B->val[Bindex];                 //part of dot product
-  //           C->ind[countCval] = rowB;                                             //setting the column of the incremented value
-  //           addToPTR = true;                                                      //Yes, there will be a value
-  //         }
-  //       }
-  //     }
-  //     if(addToPTR){                                                               //if there is a non-zero value
-  //       ++countCval;                                                              //prep for the next value slot
-  //     }
-  //     addToPTR = false;                                                           //reset
-  //   }
-  //   C->ptr[rowA + 1] = countCval;                                                 //ptr is current amount of value available
-  // }
-
-  C->reserve(A->nrows, A->nrows * B->nrows);
-  C->ncols = B->nrows;
-
-  C->ptr[0] = 0;
-  C->ptr[1] = 0;
-
-  val_t temp = 0;
-  idx_t currentVal = 0;
-  #pragma omp parallel
-  {
-    #pragma omp for
-    for(idx_t rowA = 0; rowA < A->nrows; ++rowA){
-      for(idx_t rowB = 0; rowB < B->nrows; ++rowB){
-        // printf("Row A is: %d and Row B is: %d\n", rowA, rowB);
-        temp = sparsevectorvector(A, B, rowA, rowB);
-        if (temp != 0){
-          C->val[currentVal] = temp;
-          C->ind[currentVal] = rowB;
-          ++currentVal;
-          temp = 0;
-        }
-      }
-      C->ptr[rowA + 1] = (ptr_t) currentVal;
-
-    }  
-  }
-  // #pragma omp single
-  // {
-  //   for (idx_t i = 0; i < C->nrows; ++i){
-  //     printf("%lu\n", C->ptr[i]);
-  //   }
-  // }
-}
-
-
-
 int main(int argc, char *argv[])
 {
   // if(argc < 4){
@@ -368,35 +241,13 @@ int main(int argc, char *argv[])
 
   /* initialize random seed: */
   srand (time(NULL));
-
-  auto A = csr_t::random(nrows, ncols, factor);
   auto B = csr_t::random(ncols, ncols2, factor); // Note B is not transposed yet.
-  // test_matrix(A);
-  // test_matrix(B);
-  auto C = new csr_t(); // Note that C has no data allocations so far.
-
-  // cout << A->info("A") << endl;
-  // cout << B->info("B") << endl;
-
-  auto t1 = omp_get_wtime();
-  /* Optionally transpose matrix B (Must implement) */
-  // B->transpose();
+  
   auto Btranspose = B->transpose();
-  // test_matrix(Btranspose);
   cout << Btranspose->info("Btranspose") << endl;
-  sparsematmult(A, Btranspose, C);
 
-  auto t2 = omp_get_wtime();
-
-  // test_matrix(C);
-  cout << C->info("C") << endl;
-
-  cout << "Execution time: " << (t2-t1) << endl;
-
-  delete A;
   delete B;
   delete Btranspose;
-  delete C;
 
   return 0;
 }
