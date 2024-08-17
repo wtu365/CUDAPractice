@@ -12,6 +12,7 @@ __global__ void func(float * CSRval, int * CSRind, float * CSCval, int * CSCind,
     int high = CSCptr[blockIdx.x + 1];
     int low = CSCptr[blockIdx.x];
     int guard = high - low;
+    
 
     /*
      * Each thread is the product of the block dimensions. 
