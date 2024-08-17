@@ -34,6 +34,19 @@ __global__ void func(float * CSRval, int * CSRind, float * CSCval, int * CSCind,
 
 }
 
+__global__ void func2(int * CSRind, int * CSCptr, int CSCrows, int nonzeros) {
+    int k = threadIdx.x;
+    if (k < CSCrows + 1) {
+        CSCptr[k] = 0;
+    }
+
+    __syncthreads();
+
+    int j = threadIdx.x;
+    if (j < nonzeros) { 
+        CSCptr[CSRind[j] + 1]++;
+    }
+}
 
 int transpose() {};
 
