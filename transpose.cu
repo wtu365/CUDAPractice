@@ -12,7 +12,7 @@
  *      for the next value index pair to be slotted in. Changes to ptr non-binding, b/c we won't cpy it back.
  */
 
-__global__ void func(float * CSRval, int * CSRind, float * CSCval, int * CSCind, int * CSCptr) {
+__global__ void transposition(float * CSRval, int * CSRind, float * CSCval, int * CSCind, int * CSCptr) {
 
     int high = CSCptr[blockIdx.x + 1];
     int low = CSCptr[blockIdx.x];
