@@ -1,5 +1,19 @@
 #include <cuda.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdexcept>
+#include <assert.h>
+
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess) 
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+#define gpuErrorCheck(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+
 /*
  * We want to divide the work of each row of the CSC into its own designated Block
  * Correspondingly, each thread within each block will deal with it's own non-zero value from the CSR
@@ -55,7 +69,54 @@ __global__ void func2(int * CSRind, int * CSCptr, int CSCrows, int nonzeros) {
     }
 }
 
-int transpose() {};
+/*
+ * Transpose takes in a csr_t data structure and creates a new one, populating it with values representing the transposed matrix.
+ * mat's data is copied over to the GPU. The Transposition occurs, and data is copied back into transposed.
+ * 
+ */
+
+CSR * transpose(CSR * mat) {
+    CSR * tranposed = new CSR();
+
+    float * d_values;
+    int * d_indices;
+    int * d_ptr;
+    float * dt_values;
+    int * dt_indices;
+    int * dt_ptr;
+    gpuErrorCheck(cudaMalloc(&d_values, sizeof(float) * size))
+    gpuErrorCheck(cudaMalloc(&d_indices, sizeof(int) * size))
+    gpuErrorCheck(cudaMalloc(&d_ptr, sizeof(int) * size))
+
+    gpuErrorCheck(cudaMalloc(&dt_values, sizeof(float) * size))
+    gpuErrorCheck(cudaMalloc(&dt_indices, sizeof(int) * size))
+    gpuErrorCheck(cudaMalloc(&dt_ptr, sizeof(int) * size))
+    
+    gpuErrorCheck(cudaMemcpy(d_values, mat->val, sizeof(float) * size, cudaMemcpyHostToDevice))
+    gpuErrorCheck(cudaMemcpy(d_indices, mat->ind, sizeof(int) * size, cudaMemcpyHostToDevice))
+    gpuErrorCheck(cudaMemcpy(d_ptr, mat->ptr, sizeof(int) * size, cudaMemcpyHostToDevice))
+
+    // func2<<<>>>
+
+    gpuErrorCheck(cudaMemcpy(transposed->val, dt_values, sizeof(float) * size, cudaMemcpyDeviceToHost))
+    gpuErrorCheck(cudaMemcpy(transposed->ind, dt_indices, sizeof(int) * size, cudaMemcpyDeviceToHost))
+    gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * size, cudaMemcpyDeviceToHost))
 
 
-int main() {};
+
+
+
+    gpuErrorCheck(cudaFree(d_values))
+    gpuErrorCheck(cudaFree(d_indices))
+    gpuErrorCheck(cudaFree(d_ptr))
+    gpuErrorCheck(cudaFree(dt_values))
+    gpuErrorCheck(cudaFree(dt_indices))
+    gpuErrorCheck(cudaFree(dt_ptr))
+    
+    delete transposed;
+};
+
+
+int main() {
+
+};
