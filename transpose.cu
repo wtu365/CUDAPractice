@@ -1,5 +1,6 @@
 #include <cuda.h>
 #include <stdlib.h>
+#include <stdexcept>
 /*
  * We want to divide the work of each row of the CSC into its own designated Block
  * Correspondingly, each thread within each block will deal with it's own non-zero value from the CSR
@@ -11,6 +12,68 @@
  * A Final increment of the ptr value in question is necessary, to point to the next spot in the chain,
  *      for the next value index pair to be slotted in. Changes to ptr non-binding, b/c we won't cpy it back.
  */
+
+typedef struct CSR {
+    int nrows; // number of rows
+    int ncols; // number of rows
+    int * ind; // column ids
+    float * val; // values
+    int * ptr; // pointers (start of row in ind/val)\
+
+    CSR()
+    {
+        nrows = ncols = 0;
+        ind = nullptr;
+        val = nullptr;
+        ptr = nullptr;
+    }
+
+    void reserve(const int nrows, const int nnz)
+    {
+        if(nrows > this->nrows){
+            if(ptr){
+                ptr = (int*) realloc(ptr, sizeof(int) * (nrows+1));
+            } else {
+                ptr = (int*) malloc(sizeof(int) * (nrows+1));
+                ptr[0] = 0;
+            }
+            if(!ptr){
+                throw std::runtime_error("Could not allocate ptr array.");
+            }
+        }
+        if(nnz > ptr[this->nrows]){
+            if(ind){
+                ind = (int*) realloc(ind, sizeof(int) * nnz);
+            } else {
+                ind = (int*) malloc(sizeof(int) * nnz);
+            }
+            if(!ind){
+                throw std::runtime_error("Could not allocate ind array.");
+            }
+            if(val){
+                val = (float*) realloc(val, sizeof(float) * nnz);
+            } else {
+                val = (float*) malloc(sizeof(float) * nnz);
+            }
+            if(!val){
+                throw std::runtime_error("Could not allocate val array.");
+            }
+        }
+        this->nrows = nrows;
+    }
+
+    ~CSR() {
+        if (ind) {
+            free(ind);
+        }
+        if (val) {
+            free(val);
+        }
+        if (ptr) {
+            free(ptr);
+        }
+    }
+} CSR;
 
 __global__ void transposition(float * CSRval, int * CSRind, float * CSCval, int * CSCind, int * CSCptr) {
 
