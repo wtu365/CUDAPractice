@@ -138,7 +138,7 @@ __global__ void func2(int * CSRind, int * CSCptr, int CSCrows, int nonzeros) {
  */
 
 CSR * transpose(CSR * mat) {
-    CSR * tranposed = new CSR();
+    CSR * transposed = new CSR();
 
     float * d_values;
     int * d_indices;
@@ -146,6 +146,8 @@ CSR * transpose(CSR * mat) {
     float * dt_values;
     int * dt_indices;
     int * dt_ptr;
+
+    int size = 0;
     gpuErrorCheck(cudaMalloc(&d_values, sizeof(float) * size))
     gpuErrorCheck(cudaMalloc(&d_indices, sizeof(int) * size))
     gpuErrorCheck(cudaMalloc(&d_ptr, sizeof(int) * size))
