@@ -162,6 +162,8 @@ CSR * transpose(CSR * mat) {
 
     // func2<<<>>>
 
+    //transposition<<<>>>
+
     gpuErrorCheck(cudaMemcpy(transposed->val, dt_values, sizeof(float) * size, cudaMemcpyDeviceToHost))
     gpuErrorCheck(cudaMemcpy(transposed->ind, dt_indices, sizeof(int) * size, cudaMemcpyDeviceToHost))
     gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * size, cudaMemcpyDeviceToHost))
