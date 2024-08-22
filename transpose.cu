@@ -182,5 +182,33 @@ CSR * transpose(CSR * mat) {
 
 
 int main() {
+    CSR * mat = new CSR();
+    mat->reserve(5, 6);
+    mat->ncols = 5;
 
+    mat->ptr[0] = 0;
+    mat->ptr[1] = 1;
+    mat->ptr[2] = 1;
+    mat->ptr[3] = 4;
+    mat->ptr[4] = 5;
+    mat->ptr[5] = 6;
+
+    mat->val[0] = 1;
+    mat->val[1] = 2;
+    mat->val[2] = 3;
+    mat->val[3] = 4;
+    mat->val[4] = 5;
+    mat->val[5] = 6;
+
+    mat->ind[0] = 3;
+    mat->ind[1] = 1;
+    mat->ind[2] = 2;
+    mat->ind[3] = 3;
+    mat->ind[4] = 4;
+    mat->ind[5] = 0;
+
+    CSR * transposed = transpose(mat);
+
+    delete mat;
+    delete transposed;
 };
