@@ -139,6 +139,8 @@ __global__ void func2(int * CSRind, int * CSCptr, int CSCrows, int nonzeros) {
 
 CSR * transpose(CSR * mat) {
     CSR * transposed = new CSR();
+    transposed->reserve(mat->ncols, mat->ptr[mat->nrows]);
+    transposed->ncols = mat->nrows;
 
     float * d_values;
     int * d_indices;
@@ -147,24 +149,26 @@ CSR * transpose(CSR * mat) {
     int * dt_indices;
     int * dt_ptr;
 
-    int size = 0;
+    int size = mat->ptr[mat->nrows];
     gpuErrorCheck(cudaMalloc(&d_values, sizeof(float) * size))
     gpuErrorCheck(cudaMalloc(&d_indices, sizeof(int) * size))
-    gpuErrorCheck(cudaMalloc(&d_ptr, sizeof(int) * size))
+    gpuErrorCheck(cudaMalloc(&d_ptr, sizeof(int) * (mat->nrows + 1)))
 
     gpuErrorCheck(cudaMalloc(&dt_values, sizeof(float) * size))
     gpuErrorCheck(cudaMalloc(&dt_indices, sizeof(int) * size))
-    gpuErrorCheck(cudaMalloc(&dt_ptr, sizeof(int) * size))
+    gpuErrorCheck(cudaMalloc(&dt_ptr, sizeof(int) * (transposed->nrows + 1)))
     
     gpuErrorCheck(cudaMemcpy(d_values, mat->val, sizeof(float) * size, cudaMemcpyHostToDevice))
     gpuErrorCheck(cudaMemcpy(d_indices, mat->ind, sizeof(int) * size, cudaMemcpyHostToDevice))
-    gpuErrorCheck(cudaMemcpy(d_ptr, mat->ptr, sizeof(int) * size, cudaMemcpyHostToDevice))
+    gpuErrorCheck(cudaMemcpy(d_ptr, mat->ptr, sizeof(int) * (mat->nrows + 1), cudaMemcpyHostToDevice))
 
-    // func2<<<>>>
+    // func2<<<>>>(d_indices, dt_ptr, transposed->nrows, size)
+
+    //transposition<<<>>>(float * CSRval, int * CSRind, float * CSCval, int * CSCind, int * CSCptr)
 
     gpuErrorCheck(cudaMemcpy(transposed->val, dt_values, sizeof(float) * size, cudaMemcpyDeviceToHost))
     gpuErrorCheck(cudaMemcpy(transposed->ind, dt_indices, sizeof(int) * size, cudaMemcpyDeviceToHost))
-    gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * size, cudaMemcpyDeviceToHost))
+    gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyDeviceToHost))
 
 
 
@@ -177,7 +181,7 @@ CSR * transpose(CSR * mat) {
     gpuErrorCheck(cudaFree(dt_indices))
     gpuErrorCheck(cudaFree(dt_ptr))
     
-    delete transposed;
+    return transposed;
 };
 
 
