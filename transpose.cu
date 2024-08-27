@@ -162,9 +162,13 @@ CSR * transpose(CSR * mat) {
     gpuErrorCheck(cudaMemcpy(d_indices, mat->ind, sizeof(int) * size, cudaMemcpyHostToDevice))
     gpuErrorCheck(cudaMemcpy(d_ptr, mat->ptr, sizeof(int) * (mat->nrows + 1), cudaMemcpyHostToDevice))
 
-    // func2<<<>>>(d_indices, dt_ptr, transposed->nrows, size)
+    int threadsPerBlock = 256;
+    int numBlocks = ((mat->ncols < mat->ptr[mat->nrows] ? mat->ptr[mat->nrows] : mat->ncols) + threadsPerBlock - 1)/ threadsPerBlock;
 
-    //transposition<<<>>>(float * CSRval, int * CSRind, float * CSCval, int * CSCind, int * CSCptr)
+    func2<<<numBlocks, threadsPerBlock>>>(d_indices, dt_ptr, transposed->nrows, size);
+
+    numBlocks = mat->nrows;
+    transposition<<<numBlocks, threadsPerBlock>>>(d_values, d_indices, dt_values, dt_indices, dt_ptr);
 
     gpuErrorCheck(cudaMemcpy(transposed->val, dt_values, sizeof(float) * size, cudaMemcpyDeviceToHost))
     gpuErrorCheck(cudaMemcpy(transposed->ind, dt_indices, sizeof(int) * size, cudaMemcpyDeviceToHost))
