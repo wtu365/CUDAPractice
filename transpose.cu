@@ -234,6 +234,9 @@ int main() {
 
     CSR * transposed = transpose(mat);
 
+    mat->info();
+    transposed->info();
+
     delete mat;
     delete transposed;
 };
