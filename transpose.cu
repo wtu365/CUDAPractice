@@ -78,12 +78,17 @@ typedef struct CSR {
 
     std::string info(const std::string name="") const
     {
-        printf((name != "" ? name : "CSR") + "ptr:");
+        std::cout << (name != "" ? name : "CSR") + "ptr: ";
         for (int i = 0; i <= nrows; i++) {
-            printf(std::to_string(ptr[i]) + " ");
+            std::cout << std::to_string(ptr[i]) + " ";
         }
+        std::cout << (name != "" ? name : "CSR") + "ind: ";
         for (int i = 0; i < ptr[nrows]; i++) {
-
+            std::cout << std::to_string(ind[i]) + " ";
+        }
+        std::cout << (name != "" ? name : "CSR") + "val: ";
+        for (int i = 0; i < ptr[nrows]; i++) {
+            std::cout << std::to_string(val[i]) + " ";
         }
     }
 
