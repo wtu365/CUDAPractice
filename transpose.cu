@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
 #include <stdexcept>
 #include <assert.h>
 
