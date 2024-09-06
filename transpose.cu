@@ -75,6 +75,17 @@ typedef struct CSR {
         this->nrows = nrows;
     }
 
+    std::string info(const std::string name="") const
+    {
+        printf((name != "" ? name : "CSR") + "ptr:");
+        for (int i = 0; i <= nrows; i++) {
+            printf(std::to_string(ptr[i]) + " ");
+        }
+        for (int i = 0; i < ptr[nrows]; i++) {
+
+        }
+    }
+
     ~CSR() {
         if (ind) {
             free(ind);
