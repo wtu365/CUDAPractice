@@ -9,7 +9,7 @@ TARGETS = transpose
 all: $(TARGETS)
 
 transpose: transpose.cu
-	nvcc $(CUDA_CFLAGS) $(CUDA_LDFLAGS) -o $(@) transpose.cu
+	nvcc $(CUDA_CFLAGS) $(CUDA_LDFLAGS) -o $(@) -g transpose.cu
 
 clean:
 	$(RM) $(TARGETS) *.lib *.a *.exe *.obj *.o *.exp *.pyc
