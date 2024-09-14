@@ -76,7 +76,7 @@ typedef struct CSR {
         this->nrows = nrows;
     }
 
-    std::string info(const std::string name="") const
+    void info(const std::string name="") const
     {
         std::cout << (name != "" ? name : "CSR") + "ptr: ";
         for (int i = 0; i <= nrows; i++) {
@@ -105,10 +105,10 @@ typedef struct CSR {
     }
 } CSR;
 
-__global__ void transposition(float * CSRval, int * CSRind, float * CSCval, int * CSCind, int * CSCptr) {
+__global__ void transposition(float * CSRval, int * CSRind, int * CSRptr, float * CSCval, int * CSCind, int * CSCptr) {
 
-    int high = CSCptr[blockIdx.x + 1];
-    int low = CSCptr[blockIdx.x];
+    int high = CSRptr[blockIdx.x + 1];
+    int low = CSRptr[blockIdx.x];
     int guard = high - low;
 
     /*
@@ -129,7 +129,8 @@ __global__ void transposition(float * CSRval, int * CSRind, float * CSCval, int 
          */
         CSCval[CSCptr[c]] = v;
         CSCind[CSCptr[c]] = low;
-        ++CSCptr[c];
+        // ++CSCptr[c];
+        atomicAdd(&CSCptr[c], 1);
 
     } else return;
 }
@@ -140,12 +141,16 @@ __global__ void func2(int * CSRind, int * CSCptr, int CSCrows, int nonzeros) {
         CSCptr[k] = 0;
     }
 
+    
+
     __syncthreads();
 
     int j = blockIdx.x * blockDim.x + threadIdx.x;
-    if (j < nonzeros) { 
-        CSCptr[CSRind[j] + 1]++;
+    if (j < nonzeros) {
+        atomicAdd(&CSCptr[CSRind[j] + 1], 1);
     }
+    // if (k < CSCrows + 1) 
+    //     printf("%d\n", CSCptr[k]);
 }
 
 /*
@@ -184,12 +189,19 @@ CSR * transpose(CSR * mat) {
 
     func2<<<numBlocks, threadsPerBlock>>>(d_indices, dt_ptr, transposed->nrows, size);
 
+    gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyDeviceToHost))
+
+    for (unsigned i = 1; i < transposed->nrows + 1; ++i)
+        transposed->ptr[i] = transposed->ptr[i] + transposed->ptr[i-1];
+        
+    gpuErrorCheck(cudaMemcpy(dt_ptr, transposed->ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyHostToDevice))
+
     numBlocks = mat->nrows;
-    transposition<<<numBlocks, threadsPerBlock>>>(d_values, d_indices, dt_values, dt_indices, dt_ptr);
+    transposition<<<numBlocks, threadsPerBlock>>>(d_values, d_indices, d_ptr, dt_values, dt_indices, dt_ptr);
 
     gpuErrorCheck(cudaMemcpy(transposed->val, dt_values, sizeof(float) * size, cudaMemcpyDeviceToHost))
     gpuErrorCheck(cudaMemcpy(transposed->ind, dt_indices, sizeof(int) * size, cudaMemcpyDeviceToHost))
-    gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyDeviceToHost))
+    // gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyDeviceToHost))
 
 
 
@@ -234,8 +246,8 @@ int main() {
 
     CSR * transposed = transpose(mat);
 
-    mat->info();
-    transposed->info();
+    mat->info("start mat");
+    transposed->info("tranposed mat");
 
     delete mat;
     delete transposed;
