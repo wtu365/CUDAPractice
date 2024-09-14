@@ -127,6 +127,14 @@ __global__ void transposition(float * CSRval, int * CSRind, int * CSRptr, float 
          * Set future index similarly, with Block ID (row num in CSR) accordingly
          * Only works b/c we increment the open position within each row
          */
+
+        /*
+         * Problem here is that the code below needs to be highly sequential, where accesses and increments have 
+         * to be in alternating order, and that each access also needs to be in a specific order (row by row). 
+         * These two conditions leads to this code being both critical and sequential, which means we need an
+         * incrementing lock to allow the threads to run this code in a specific order, and have each thread run
+         * this code atomically.
+        */
         CSCval[CSCptr[c]] = v;
         CSCind[CSCptr[c]] = low;
         // ++CSCptr[c];
