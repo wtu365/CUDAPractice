@@ -191,6 +191,20 @@ __global__ void transposition(float *CSRval, int *CSRind, int *CSRptr, float *CS
         CSCind[CSCptr[c]] = low;
         // ++CSCptr[c];
         atomicAdd(&CSCptr[c], 1);
+        /*
+         * __shared__ int lock_id = 0;
+         * 
+         * __syncthreads();
+         * 
+         * //compare non-zero id (j) with lock_id
+         * while (atomicCAS(&lock_id, num, num) != num);
+         * //critical
+         * atomicAdd(&lock_id, 1)
+         * 
+         * __syncthreads();
+         * 
+         */
+
     }
     else
         return;
