@@ -250,44 +250,44 @@ CSR *transpose(CSR *mat)
 
     int size = mat->ptr[mat->nrows];
     gpuErrorCheck(cudaMalloc(&d_values, sizeof(float) * size))
-        gpuErrorCheck(cudaMalloc(&d_indices, sizeof(int) * size))
-            gpuErrorCheck(cudaMalloc(&d_ptr, sizeof(int) * (mat->nrows + 1)))
+    gpuErrorCheck(cudaMalloc(&d_indices, sizeof(int) * size))
+    gpuErrorCheck(cudaMalloc(&d_ptr, sizeof(int) * (mat->nrows + 1)))
 
-                gpuErrorCheck(cudaMalloc(&dt_values, sizeof(float) * size))
-                    gpuErrorCheck(cudaMalloc(&dt_indices, sizeof(int) * size))
-                        gpuErrorCheck(cudaMalloc(&dt_ptr, sizeof(int) * (transposed->nrows + 1)))
+    gpuErrorCheck(cudaMalloc(&dt_values, sizeof(float) * size))
+    gpuErrorCheck(cudaMalloc(&dt_indices, sizeof(int) * size))
+    gpuErrorCheck(cudaMalloc(&dt_ptr, sizeof(int) * (transposed->nrows + 1)))
 
-                            gpuErrorCheck(cudaMemcpy(d_values, mat->val, sizeof(float) * size, cudaMemcpyHostToDevice))
-                                gpuErrorCheck(cudaMemcpy(d_indices, mat->ind, sizeof(int) * size, cudaMemcpyHostToDevice))
-                                    gpuErrorCheck(cudaMemcpy(d_ptr, mat->ptr, sizeof(int) * (mat->nrows + 1), cudaMemcpyHostToDevice))
+    gpuErrorCheck(cudaMemcpy(d_values, mat->val, sizeof(float) * size, cudaMemcpyHostToDevice))
+    gpuErrorCheck(cudaMemcpy(d_indices, mat->ind, sizeof(int) * size, cudaMemcpyHostToDevice))
+    gpuErrorCheck(cudaMemcpy(d_ptr, mat->ptr, sizeof(int) * (mat->nrows + 1), cudaMemcpyHostToDevice))
 
-                                        int threadsPerBlock = 256;
+    int threadsPerBlock = 256;
     int numBlocks = ((mat->ncols < mat->ptr[mat->nrows] ? mat->ptr[mat->nrows] : mat->ncols) + threadsPerBlock - 1) / threadsPerBlock;
 
     func2<<<numBlocks, threadsPerBlock>>>(d_indices, dt_ptr, transposed->nrows, size);
 
     gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyDeviceToHost))
 
-        for (unsigned i = 1; i < transposed->nrows + 1; ++i)
-            transposed->ptr[i] = transposed->ptr[i] + transposed->ptr[i - 1];
+    for (unsigned i = 1; i < transposed->nrows + 1; ++i)
+        transposed->ptr[i] = transposed->ptr[i] + transposed->ptr[i - 1];
 
     gpuErrorCheck(cudaMemcpy(dt_ptr, transposed->ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyHostToDevice))
 
-        numBlocks = mat->nrows;
+    numBlocks = mat->nrows;
     transposition<<<numBlocks, threadsPerBlock>>>(d_values, d_indices, d_ptr, dt_values, dt_indices, dt_ptr);
 
     gpuErrorCheck(cudaMemcpy(transposed->val, dt_values, sizeof(float) * size, cudaMemcpyDeviceToHost))
-        gpuErrorCheck(cudaMemcpy(transposed->ind, dt_indices, sizeof(int) * size, cudaMemcpyDeviceToHost))
-        // gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyDeviceToHost))
+    gpuErrorCheck(cudaMemcpy(transposed->ind, dt_indices, sizeof(int) * size, cudaMemcpyDeviceToHost))
+    // gpuErrorCheck(cudaMemcpy(transposed->ptr, dt_ptr, sizeof(int) * (transposed->nrows + 1), cudaMemcpyDeviceToHost))
 
-        gpuErrorCheck(cudaFree(d_values))
-            gpuErrorCheck(cudaFree(d_indices))
-                gpuErrorCheck(cudaFree(d_ptr))
-                    gpuErrorCheck(cudaFree(dt_values))
-                        gpuErrorCheck(cudaFree(dt_indices))
-                            gpuErrorCheck(cudaFree(dt_ptr))
+    gpuErrorCheck(cudaFree(d_values))
+    gpuErrorCheck(cudaFree(d_indices))
+    gpuErrorCheck(cudaFree(d_ptr))
+    gpuErrorCheck(cudaFree(dt_values))
+    gpuErrorCheck(cudaFree(dt_indices))
+    gpuErrorCheck(cudaFree(dt_ptr))
 
-                                return transposed;
+    return transposed;
 };
 
 int main()
